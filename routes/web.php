@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Auth;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -20,3 +20,18 @@ Route::get('/', function () {
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+
+Route::group(['middleware' => ['auth', 'admin'], 'namespace' => 'Admin', 'prefix' => 'admin', 'as' => 'admin.'], function () {
+
+    Route::get('/', function () {
+        return view('/admin/index');
+    })->name('main');
+
+    Route::get('/news', [App\Http\Controllers\Admin\NewsController::class, 'index'])->name('news');
+    Route::get(
+        '/news/draw',
+        [App\Http\Controllers\Admin\NewsController::class, 'drawNewsTable']
+    )->name('news.table');
+
+});
