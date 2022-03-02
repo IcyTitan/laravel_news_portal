@@ -15,7 +15,7 @@
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
-
+    @stack('scripts')
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
@@ -82,32 +82,5 @@
         @yield('content')
     </main>
 </div>
-<script type="application/javascript">
-    $(function () {
-        $('#news-table').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: '{{route('admin.news.table')}}',
-            headers: {
-                'X-CSRF-TOKEN': '{{csrf_token()}}',
-            },
-            columns: [
-                {data: 'id', name: 'id'},
-                {data: 'name', name: 'Имя'},
-                {data: 'category_id', name: 'Категория'},
-                {data: 'short_description', name: 'Краткое описание'},
-                {data: 'description', name: 'Описание'},
-                {data: 'created_at', name: 'Дата создания'},
-                /*{
-                    data: 'action',
-                    name: 'action',
-                    orderable: true,
-                    searchable: true
-                },*/
-            ]
-        });
-    });
-</script>
-</script>
 </body>
 </html>
