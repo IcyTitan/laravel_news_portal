@@ -4,7 +4,16 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers;
 
-Route::get('/', [Controllers\PublicArea\NewsController::class, 'index'])->name('news');
+Route::group(['as' => 'news.', 'prefix' => '/'], function () {
+    Route::get('/', [Controllers\PublicArea\NewsController::class, 'index'])->name('main');
+    Route::post('/filter', [Controllers\PublicArea\NewsController::class, 'setCategory'])->name('setCategory');
+    Route::post(
+        '/pagination',
+        [Controllers\PublicArea\NewsController::class,
+            'setPaginationCount']
+    )->name('setPagination');
+});
+
 
 Auth::routes();
 
