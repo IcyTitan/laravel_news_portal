@@ -10,7 +10,7 @@ use DataTables;
 
 class NewsController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $categories = NewsCategories::all();
         return view('admin/news/index')->with([
