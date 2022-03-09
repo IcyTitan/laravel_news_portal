@@ -6,12 +6,7 @@ use App\Http\Controllers;
 
 Route::group(['as' => 'news.', 'prefix' => '/'], function () {
     Route::get('/', [Controllers\PublicArea\NewsController::class, 'index'])->name('main');
-    Route::post('/filter', [Controllers\PublicArea\NewsController::class, 'setCategory'])->name('setCategory');
-    Route::post(
-        '/pagination',
-        [Controllers\PublicArea\NewsController::class,
-            'setPaginationCount']
-    )->name('setPagination');
+    Route::post('/pagination', [Controllers\PublicArea\NewsController::class, 'setPaginationCount'])->name('pagination');
 });
 
 
@@ -30,12 +25,6 @@ Route::group(['middleware' => ['auth', 'admin'], 'namespace' => 'Admin', 'prefix
 
     //news page
     Route::get('/news', [Controllers\Admin\NewsController::class, 'index'])->name('news');
-
-    //draw table
-    Route::get(
-        '/news/draw',
-        [Controllers\Admin\NewsController::class, 'drawNewsTable']
-    )->name('news.table');
 
     //NEWS CRUD
     Route::post('/news/delete', [Controllers\Admin\NewsController::class, 'newsDelete'])->name('news.delete');

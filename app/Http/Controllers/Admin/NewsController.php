@@ -5,110 +5,142 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\News;
-use App\Models\NewsCategories;
+use App\DataTables\Admin\NewsDataTable;
 use DataTables;
+use App\Helpers\DatabaseHelper;
 
 class NewsController extends Controller
 {
-    public function index()
+    public function index(NewsDataTable $dataTable, Request $request)
     {
-        $categories = NewsCategories::all();
-        return view('admin/news/index')->with([
-            'categories' => $categories,
-        ]);
-    }
+        $database = new DatabaseHelper();
 
-    /**
-     * @param Request $request
-     * @return void
-     */
-    public function drawNewsTable(Request $request)
-    {
         if ($request->ajax()) {
-            $data = News::latest()->get();
-            return Datatables::of($data)
-                ->addIndexColumn()
-                ->addColumn('action', function ($row) {
-                    $actionBtn = '<button
-                                        type="button"
-                                        class="edit btn btn-success btn-sm edit-button"
-                                        id-attr="' . $row->id . '">
-                                    Edit
-                                  </button>
-                        <button
-                                class="delete btn btn-danger btn-sm delete-button"
-                                id-attr="' . $row->id . '">
-                            Delete
-                        </button>
-                    ';
-                    return $actionBtn;
-                })
-                ->addColumn('category', function ($row) {
-                    return $row->category->name;
-                })
-                ->rawColumns(['action'])
-                ->make(true);
+            return $this->drawNewsTable();
         }
-    }
-
-    /**
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function newsDelete(Request $request)
-    {
-        $response = News::find($request->id)->delete();
-        return response()->json([
-                'success' => $response,
-        ]);
-    }
-
-    /**
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function newsEdit(Request $request)
-    {
-        $news = News::find($request->id);
-        return response()->json([
-            'success' => !empty($news),
-            'news' => $news,
-        ]);
-    }
-
-    /**
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function updateNews(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-        ]);
-        $company = News::find($request->input('id'));
-
-        $company->name = $request->input('name');
-        $company->category_id = $request->input('category');
-        $company->short_description = $request->input('short-description');
-        $company->description = $request->input('description');
-        $success = $company->update();
-
-        return response()->json(
+        $categories = $database->query("call get_news_categories()");
+        return $dataTable->render(
+            'admin/news/index',
             [
-                'success' => $success,
+                'categories' => $categories,
             ]
         );
     }
 
     /**
+     * @param NewsDataTable $dataTable
+     * @return mixed
+     */
+    private function drawNewsTable()
+    {
+        $model = News::query();
+        return DataTables::of($model->newQuery())
+            ->addIndexColumn()
+            ->editColumn('category', function ($model) {
+                return $model->category->name;
+            })
+            ->rawColumns(['action'])
+            ->addColumn('action', function ($row) {
+                return view('admin/components/tablebuttons')->with([
+                    'row' => $row,
+                ]);
+            })
+            ->make(true);
+    }
+
+    /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function saveNews(Request $request)
+    public function newsDelete(Request $request, DatabaseHelper $database)
+    {
+        $id = intval($request->input('id'));
+        $response = $database->prepareQuery("CALL delete_news(?)", "i", [$id]);
+        return response()->json([
+            'success' => $response,
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function newsEdit(Request $request, DatabaseHelper $database)
+    {
+        $id = intval($request->input('id'));
+        $news = $database->prepareQuery('call select_news(?)', "i", [$id]);
+        return response()->json([
+            'success' => !empty($news),
+            'news' => $news[0],
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateNews(Request $request, DatabaseHelper $database)
     {
         $request->validate([
-            'name' => 'required',
+            'name' => ['required', 'regex:/^[aA-zZаА-яЯ0-9-_,. ]+$/i', 'max:250', 'min:5'],
+            'short-description' => ['required', 'regex:/^[aA-zZаА-яЯ0-9-_,. ]+$/i', 'max:400', 'min:5'],
+            'description' => ['required', 'regex:/^[aA-zZаА-яЯ0-9-_,. ]+$/i', 'max:4000', 'min:5'],
+            'category' => ['required', 'regex:/^[0-9]+$/i'],
+            'id' => ['required', 'regex:/^[0-9]+$/i'],
+        ],[
+            'required' => 'Поле :attribute не заполнено',
+            'regex' => 'Поле :attribute содержит недопустимые символы',
+            'max' => 'Поле :attribute должно быть не больше :max символов.',
+            'min' => 'Поле :attribute должно быть не меньше :min символов.',
         ]);
+
+        $inserValues = [
+            $request->input('name'),
+            $request->input('category'),
+            $request->input('short-description'),
+            $request->input('description'),
+            date("Y-m-d H:i:s"),
+            $request->input('id')
+        ];
+
+        $queryRes = $database->prepareQuery('call update_news(?,?,?,?,?,?)', "sisssi", $inserValues);
+
+        return response()->json(
+            [
+                'success' => $queryRes,
+            ]
+        );
+
+    }
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveNews(Request $request, DatabaseHelper $database)
+    {
+        $request->validate(
+            [
+                'name' => ['required', 'regex:/^[aA-zZаА-яЯ0-9-_,.]+$/i' , 'max:250', 'min:5'],
+                'short-description' => ['required', 'regex:/^[aA-zZаА-яЯ0-9-_,. ]+$/i' , 'max:400', 'min:5'],
+                'description' => ['required', 'regex:/^[aA-zZаА-яЯ0-9-_,. ]+$/i', 'max:4000', 'min:5'],
+                'category' => ['required', 'regex:/^[0-9]+$/i'],
+            ], [
+                'required' => 'Поле :attribute не заполнено',
+                'regex' => 'Поле :attribute содержит недопустимые символы',
+                'max' => 'Поле :attribute должно быть не больше :max символов.',
+                'min' => 'Поле :attribute должно быть не меньше :min символов.',
+            ]);
+
+        $inserValues = [
+            $request->input('name'),
+            $request->input('category'),
+            $request->input('short-description'),
+            $request->input('description'),
+            date("Y-m-d H:i:s")
+        ];
+
+        $queryRes = $database->prepareQuery('call insert_news(?,?,?,?,?)', "sisss", $inserValues);
 
         $result = News::insert([
             'name' => $request->input('name'),
