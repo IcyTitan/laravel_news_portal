@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
+use App\Models\User;
+use App\Models\News;
+use App\Models\NewsCategories;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -15,10 +17,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        for($i=0; $i<10; $i++) {
-            DB::table('news_categories')->insert([
-                'name' => Str::random(10),
-            ]);
-        }
+        User::factory()
+            ->count(50)
+            ->create();
+
+        NewsCategories::factory()
+            ->count(5)
+            ->create();
+
+        News::factory()
+            ->count(50)
+            ->create();
     }
 }

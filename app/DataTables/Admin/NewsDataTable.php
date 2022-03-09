@@ -2,7 +2,7 @@
 
 namespace App\DataTables\Admin;
 
-use App\Models\Admin\News;
+use App\Models\News;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Html\Editor\Editor;
@@ -21,13 +21,22 @@ class NewsDataTable extends DataTable
     {
         return datatables()
             ->eloquent($query)
-            ->addColumn('action', 'admin\news.action');
+            ->addIndexColumn()
+            ->rawColumns(['action'])
+            ->editColumn('category', function ($model) {
+                return $model->category->name;
+            })
+            ->addColumn('action', function ($row) {
+                return view('admin/components/tablebuttons')->with([
+                    'row' => $row,
+                ]);
+            });
     }
 
     /**
      * Get query source of dataTable.
      *
-     * @param \App\Models\Admin\News $model
+     * @param \App\Models\News $model
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function query(News $model)
@@ -43,18 +52,24 @@ class NewsDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-                    ->setTableId('admin\news-table')
-                    ->columns($this->getColumns())
-                    ->minifiedAjax()
-                    ->dom('Bfrtip')
-                    ->orderBy(1)
-                    ->buttons(
-                        Button::make('create'),
-                        Button::make('export'),
-                        Button::make('print'),
-                        Button::make('reset'),
-                        Button::make('reload')
-                    );
+            ->setTableId('news-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->parameters([
+                'lengthMenu' => [
+                    [10, 25, 50, -1],
+                    ['10', '25', '50', 'Все']
+                ],
+                'buttons' => [
+                    'csv'
+                ]
+            ])
+            ->dom('Bfrltip')
+            ->orderBy(1)
+            ->buttons(
+                Button::make('print'),
+                Button::make('reload'),
+            );
     }
 
     /**
@@ -65,25 +80,18 @@ class NewsDataTable extends DataTable
     protected function getColumns()
     {
         return [
+            Column::make('id')->title('id'),
+            Column::make('name')->title('Имя'),
+            Column::make('category')->title('Категория'),
+            Column::make('short_description')->title('Превью'),
+            Column::make('description')->title('Описание'),
+            Column::make('created_at')->title('Дата создания'),
             Column::computed('action')
-                  ->exportable(false)
-                  ->printable(false)
-                  ->width(60)
-                  ->addClass('text-center'),
-            Column::make('id'),
-            Column::make('add your columns'),
-            Column::make('created_at'),
-            Column::make('updated_at'),
+                ->exportable(false)
+                ->printable(false)
+                ->width(120)
+                ->addClass('text-center'),
         ];
     }
 
-    /**
-     * Get filename for export.
-     *
-     * @return string
-     */
-    protected function filename()
-    {
-        return 'Admin\News_' . date('YmdHis');
-    }
 }

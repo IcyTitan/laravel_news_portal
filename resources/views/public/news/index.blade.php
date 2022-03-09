@@ -14,39 +14,59 @@
 </head>
 <body>
 <div class="news container mt-4">
-    <div class="filter d-flex flex-column">
-        <select size="4" id="select-pagination" name="category">
-            <option disabled>Выберите чиссло элементов на странице</option>
-            <option value="3">3</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
-        </select>
-    </div>
-    <div class="filter d-flex flex-column mt-4">
-        <select size="4" id="select-category" name="category">
-            <option disabled>Выберите категорию</option>
-            @foreach ($categories as $category)
-                <option value="{{$category->id}}">{{$category->name}}</option>
-            @endforeach
-        </select>
-    </div>
-    @foreach ($arrNews as $news)
-        <div class="news-list mt-4 alert alert-secondary">
-            <div class="date alert-link">{{$news->created_at}}</div>
-            <div class="name alert-link">{{$news->name}}</div>
-            <div class="short_description">
-                {{$news->short_description}}
-            </div>
+    <div class="d-flex flex-row mt-4">
+        <div class="filter">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="filter navbar-brand">
+                    Отображать по
+                    <select id="select-pagination" name="category">
+                        @foreach ($pageSize as $key=>$size)
+                            <option
+                                value="{{$key}}"
+                                @if($size == $selectSize)
+                                selected
+                                @endif
+                            >
+                                {{$key}}
+                            </option>
+                        @endforeach
+                    </select>
+                    шт.
+                </div>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup"
+                        aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                    <div class="navbar-nav">
+                        @foreach ($categories as $category)
+                            <a href="{{route('news.main',['category'=>$category->id])}}"
+                               class="nav-item nav-link">{{$category->name}}</a>
+                        @endforeach
+                    </div>
+                </div>
+            </nav>
         </div>
-    @endforeach
-    {{ $arrNews->links() }}
+    </div>
+    @if (count($arrNews)>0)
+        @foreach ($arrNews as $news)
+            <div class="news-list mt-4 alert alert-secondary">
+                <div class="date alert-link">{{$news->created_at}}</div>
+                <div class="name alert-link">{{$news->name}}</div>
+                <div class="short_description">
+                    {{$news->short_description}}
+                </div>
+            </div>
+        @endforeach
+        {!!$paginator!!}
+    @else
+        Похоже в этом разделе пусто.
+    @endif
 </div>
 @once
     <script type="application/javascript">
         const CSFR_TOKEN = '{{csrf_token()}}';
-        const SET_CATEGORY = '{{route('news.setCategory')}}';
-        const SET_PAGINATION = '{{route('news.setPagination')}}'
+        const SET_PAGINATION = '{{route('news.pagination')}}';
     </script>
 @endonce
 </body>
